@@ -1,0 +1,11 @@
+# Line endings: store text with LF in the repo; each OS converts on checkout.
+* text=auto
+# Shell scripts must keep LF, or they fail on Linux/macOS ("bad interpreter").
+gradlew text eol=lf
+*.sh    text eol=lf
+# Windows batch files need CRLF.
+*.bat   text eol=crlf
+# Binary files: never touch.
+*.png  binary
+*.jar  binary
+*.ttf  binary

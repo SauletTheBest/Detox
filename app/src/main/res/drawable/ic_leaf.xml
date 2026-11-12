@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Detox logo: two leaves + stem, green with white veins. Used inside the app.
+     Coordinates: a 56 x 40 canvas. The launcher icon uses the same paths. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="40dp"
+    android:viewportWidth="56"
+    android:viewportHeight="40">
+    <!-- stem -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M25.8,28 C25.8,32 25.3,35.5 24.4,38.4"
+        android:strokeColor="#6AAB2E"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.6" />
+    <!-- left leaf -->
+    <path
+        android:fillColor="#6AAB2E"
+        android:pathData="M24,26 C14,25 4,17 2,3 C14,2 24,9 24,26 Z" />
+    <!-- right leaf -->
+    <path
+        android:fillColor="#6AAB2E"
+        android:pathData="M26,29 C26,11 38,3 54,3 C52,19 40,29 26,29 Z" />
+    <!-- veins -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M22.6,24 C18,17 12,11 7,7.5 M27.6,26.6 C32,18 40,11 49,6.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.2" />
+</vector>

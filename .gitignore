@@ -1,0 +1,28 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# --- Detox additions ---
+# Kotlin compiler caches and the whole IDE folder (personal settings)
+.kotlin/
+/.idea/
+# Databases pulled from a real phone contain YOUR rules: never publish them
+scripts/db/
+*.db
+*.db-wal
+*.db-shm
+# Signing keys, if you ever create a real release key
+*.jks
+*.keystore

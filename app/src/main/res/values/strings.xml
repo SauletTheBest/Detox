@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Detox</string>
+
+    <!-- Shown by Android on Detox's Accessibility page and in the "Allow Detox full control?" dialog.
+         It must explain WHY Detox asks, and what it can NOT do. -->
+    <string name="accessibility_description">Detox uses this to notice WHICH app you open, nothing more. When a paused app opens during a quiet time, after your daily limit or while strict mode is on, Detox closes it. It cannot read your screen, messages or passwords. Detox has no internet access, so nothing ever leaves your phone.</string>
+
+    <!-- One line under "Detox" in Android's Accessibility list (Android 12+). -->
+    <string name="accessibility_summary">Closes paused apps at the times you choose</string>
+
+    <!-- Short intro at the top of Detox's Accessibility page (Android 13+). -->
+    <string name="accessibility_intro">Detox is a calm bouncer for your phone. It only notices which app opens, so it can close social media during your quiet times.</string>
+</resources>

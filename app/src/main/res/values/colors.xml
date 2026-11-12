@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only used by XML (window backgrounds). Compose colors live in ui/theme/Color.kt -->
+    <color name="detox_leaf">#FF6AAB2E</color>
+    <color name="detox_white">#FFFFFFFF</color>
+    <color name="detox_night">#FF173A0D</color>
+</resources>

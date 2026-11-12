@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Config of our "bouncer" service.
+  typeWindowStateChanged       -> we only hear "a new window/app opened".
+  canRetrieveWindowContent=false -> the service can NOT read what is on the screen
+                                  (no chats, no passwords, no typed text).
+  description / summary / intro -> the texts Android shows on Detox's Accessibility page.
+    summary (Android 12+) and intro (Android 13+) are simply ignored by older phones;
+    tools:targetApi only tells the build checker "we know, that's fine".
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:notificationTimeout="100"
+    android:description="@string/accessibility_description"
+    android:summary="@string/accessibility_summary"
+    android:intro="@string/accessibility_intro"
+    tools:targetApi="33" />

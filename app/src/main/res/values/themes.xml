@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- windowBackground = what you see for a split second while the app starts. -->
+    <style name="Theme.Detox" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/detox_white</item>
+    </style>
+
+    <!-- The block screen starts on deep green, so there is no white flash. -->
+    <style name="Theme.Detox.Block">
+        <item name="android:windowBackground">@color/detox_night</item>
+    </style>
+
+    <!-- Home screen: transparent window. In strict mode Compose paints the boring screen;
+         with strict mode off nothing is drawn while we forward to the normal home screen. -->
+    <style name="Theme.Detox.Launcher" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>

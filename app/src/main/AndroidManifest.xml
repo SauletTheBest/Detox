@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Privacy: this app never gets internet access, even if some library asks for it.
+         tools:node="remove" deletes the permission from the final merged manifest. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+
+    <!-- "Usage access": Android's log of which app was opened when (names + times only).
+         The user grants it in Settings; tools:ignore silences the "system permission" lint warning. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Android 11+ hides other apps by default. This says: "let me see apps that
+         have an icon in the app drawer" (for the app picker). Nothing else is visible. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- Also see other home-screen apps (HiOS launcher), to forward to it when strict mode is off. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <!-- Lets Detox show the system dialog "Let Detox always run in background?" -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- "One-tap mode" (optional). Lets Detox switch its own protection on/off, remove the
+         floating shortcut, and switch protection back on if it was turned off behind its back.
+         Normal apps can NEVER get this by themselves: it is granted only by a one-time PC command
+             adb shell pm grant com.detox.app android.permission.WRITE_SECURE_SETTINGS
+         Without it, Detox simply opens the right Settings page instead. -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- allowBackup=false: app data is not copied to Google Drive backups.
+         name=".DetoxApplication": our startup class that opens the database. -->
+    <application
+        android:name=".DetoxApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Detox">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Detox"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- "Time to rest" page. Own task (taskAffinity=""), hidden from the
+             recent-apps list, so you can't swipe back to it or to the paused app. -->
+        <activity
+            android:name=".ui.block.BlockActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Detox.Block" />
+
+        <!-- "Take a breath" page for mindful apps. Same setup as the block page: own task,
+             hidden from recent apps, same deep-green start colour (no white flash). -->
+        <activity
+            android:name=".ui.pause.PauseActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Detox.Block" />
+
+        <!-- Strict mode home screen. HOME + DEFAULT = Android may use it as the home screen.
+             singleTask + taskAffinity="" + stateNotNeeded: the usual setup for a launcher. -->
+        <activity
+            android:name=".ui.launcher.LauncherActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="Detox home"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Detox.Launcher">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- The "bouncer". BIND_ACCESSIBILITY_SERVICE = only the Android system
+             can connect to it, other apps can't. -->
+        <service
+            android:name=".AppWatcherService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+    </application>
+
+</manifest>
