@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Stats" icon: three bars with rounded tops (drawn for Detox). Tinted green in code. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- short bar -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,20V14a1.5,1.5 0,0 1,3 0V20Z" />
+    <!-- tall bar -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M10.5,20V5a1.5,1.5 0,0 1,3 0V20Z" />
+    <!-- middle bar -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M17,20V10a1.5,1.5 0,0 1,3 0V20Z" />
+    <!-- baseline -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,20h18v1.5H3Z" />
+</vector>

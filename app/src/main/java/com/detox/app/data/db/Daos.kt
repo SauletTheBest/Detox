@@ -178,3 +178,82 @@ abstract class AppPrefDao {
     }
 }
 
+/**
+ * v7: stats. Writes are one INSERT per try; reads are small GROUP BY queries.
+ * All reads are "since fromMs", so the index on at_ms makes them fast even after months.
+ */
+@Dao
+interface StatsDao {
+
+    @Insert
+    suspend fun insert(event: BlockEventEntity)
+
+    /** Keep the table small: forget tries older than the cutoff. Returns how many rows were deleted. */
+    @Query("DELETE FROM block_event WHERE at_ms < :cutoffMs")
+    suspend fun deleteOlderThan(cutoffMs: Long): Int
+
+    /**
+     * Tries per Detox-day. A Detox-day starts at your "new day" time (e.g. 05:00), so a try
+     * at 02:00 still belongs to yesterday. Trick: subtract dayStartSec, THEN take the date.
+     *   at_ms / 1000            -> seconds since 1970 (SQLite's 'unixepoch' wants seconds)
+     *   'localtime'             -> your phone's time zone, not UTC
+     */
+    @Query(
+        """
+        SELECT date(at_ms / 1000 - :dayStartSec, 'unixepoch', 'localtime') AS day, COUNT(*) AS tries
+        FROM block_event
+        WHERE at_ms >= :fromMs
+        GROUP BY day
+        ORDER BY day
+        """
+    )
+    suspend fun triesPerDay(fromMs: Long, dayStartSec: Int): List<DayCountRow>
+
+    /** Which apps you tried most. `AS name` = the column name Room puts into NameCountRow.name. */
+    @Query(
+        """
+        SELECT package_name AS name, COUNT(*) AS tries
+        FROM block_event
+        WHERE at_ms >= :fromMs
+        GROUP BY package_name
+        ORDER BY tries DESC
+        """
+    )
+    suspend fun triesPerApp(fromMs: Long): List<NameCountRow>
+
+    /** Why Detox stepped in (quiet time, limit, Reels...). */
+    @Query(
+        """
+        SELECT reason AS name, COUNT(*) AS tries
+        FROM block_event
+        WHERE at_ms >= :fromMs
+        GROUP BY reason
+        ORDER BY tries DESC
+        """
+    )
+    suspend fun triesPerReason(fromMs: Long): List<NameCountRow>
+
+    /**
+     * Night-time tries per night. Same shift trick with 12 hours (NightStats.NIGHT_SHIFT_HOURS):
+     * Mon 23:45 and Tue 06:30 both become "Monday" -> one night = one date.
+     */
+    @Query(
+        """
+        SELECT date(at_ms / 1000 - :nightShiftSec, 'unixepoch', 'localtime') AS day, COUNT(*) AS tries
+        FROM block_event
+        WHERE reason = 'QUIET' AND window_kind = 'NIGHT' AND at_ms >= :fromMs
+        GROUP BY day
+        """
+    )
+    suspend fun nightTries(fromMs: Long, nightShiftSec: Int): List<DayCountRow>
+
+    /** Live row count: the Stats screen reloads when a new try is recorded. */
+    @Query("SELECT COUNT(*) FROM block_event")
+    fun observeCount(): Flow<Int>
+}
+
+/** One result row of a "per day" query: day = 'YYYY-MM-DD' (SQLite's date() format). */
+data class DayCountRow(val day: String, val tries: Int)
+
+/** One result row of a "per app" / "per reason" query. */
+data class NameCountRow(val name: String, val tries: Int)

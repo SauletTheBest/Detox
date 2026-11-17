@@ -44,8 +44,10 @@ import com.detox.app.UsageAccess
 import com.detox.app.data.InstalledApps
 import com.detox.app.data.LauncherEntry
 import com.detox.app.data.RulesRepository
+import com.detox.app.data.StatsRepository
 import com.detox.app.data.WallpaperStore
 import com.detox.app.domain.AppPref
+import com.detox.app.domain.QuietWindow
 import com.detox.app.domain.RuleEngine
 import com.detox.app.ui.theme.DetoxTheme
 import kotlinx.coroutines.Dispatchers
@@ -136,6 +138,13 @@ class LauncherActivity : ComponentActivity() {
             }
         }
 
+        // "Last night: 2 tries" under the date. Only if you have a night quiet time: without one,
+        // "calm night" would mean nothing. Re-read on every Home press (one tiny GROUP BY query).
+        val hasNight = windows.any { it.enabled && it.kind == QuietWindow.Kind.NIGHT }
+        val lastNightTries by produceState<Int?>(initialValue = null, reloadCount, hasNight) {
+            value = if (hasNight) StatsRepository.lastNightTries() else null
+        }
+
         val quiet = windows.firstOrNull { it.isActive(now) }
         val look = homeLook(prefs, quietNow = quiet != null, hasWallpaper = wallpaper != null)
         // Dark look -> white status-bar icons (clock, battery); light look -> dark icons.
@@ -183,6 +192,7 @@ class LauncherActivity : ComponentActivity() {
                 now = now,
                 status = status,
                 screenTimeMs = loaded?.screenTimeMs,
+                lastNightTries = lastNightTries,
                 prefs = prefs,
                 lists = lists,
                 showRecents = serviceRunning,
@@ -309,6 +319,9 @@ class LauncherActivity : ComponentActivity() {
         openCamera = { if (!start(Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA))) toast("No camera app found.") },
         openDetox = { start(Intent(this, MainActivity::class.java)) },
         openHomeSettings = { start(Intent(this, MainActivity::class.java).putExtra("open", "settings")) },
+        openStats = {
+            start(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_STATS))
+        },
         // These three go through our Accessibility service (Android lets it press "system buttons").
         openRecents = { AppWatcherService.openRecents() },
         openNotifications = { AppWatcherService.openNotifications() },

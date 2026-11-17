@@ -62,6 +62,7 @@ class HomeActions(
     val openCamera: () -> Unit,
     val openDetox: () -> Unit,
     val openHomeSettings: () -> Unit,
+    val openStats: () -> Unit,                     // the "Last night" line -> Detox's Stats screen
     val openRecents: () -> Unit,
     val openNotifications: () -> Unit,
     val lockScreen: () -> Unit,
@@ -92,6 +93,7 @@ fun StrictHomeScreen(
     now: LocalDateTime,
     status: String,
     screenTimeMs: Long?,
+    lastNightTries: Int?,               // null = don't show the line (no night quiet time / still loading)
     prefs: HomePrefs,
     lists: HomeLists?,                  // null = still loading
     showRecents: Boolean,
@@ -119,6 +121,7 @@ fun StrictHomeScreen(
                     now = now,
                     status = status,
                     screenTimeMs = screenTimeMs,
+                    lastNightTries = lastNightTries,
                     prefs = prefs,
                     home = lists?.home,
                     appPrefs = lists?.prefs.orEmpty(),
@@ -237,7 +240,7 @@ private fun MenuItem(
 private val previewActions = HomeActions(
     openApp = {}, toggleHome = {}, toggleHidden = {}, mindfulOn = {}, appInfo = {},
     openClock = {}, openCalendar = {}, openPhone = {}, openCamera = {}, openDetox = {},
-    openHomeSettings = {}, openRecents = {}, openNotifications = {}, lockScreen = {},
+    openHomeSettings = {}, openStats = {}, openRecents = {}, openNotifications = {}, lockScreen = {},
 )
 
 private fun previewLists(): HomeLists {
@@ -276,6 +279,7 @@ private fun PreviewHome(theme: HomeTheme, page: Int) {
             now = LocalDateTime.of(2026, 11, 12, 7, 42),
             status = strictStatusLine(listOf("Instagram", "YouTube", "Threads", "Pinterest")),
             screenTimeMs = 72 * 60_000L,
+            lastNightTries = 0,
             prefs = prefs,
             lists = previewLists(),
             showRecents = true,

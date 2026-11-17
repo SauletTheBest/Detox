@@ -82,6 +82,7 @@ fun HomeScreen(
     onOpenDefaultApps: () -> Unit,
     onRemoveShortcut: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenStats: () -> Unit,
     onToggleLimit: (Boolean) -> Unit,
     onEditLimit: () -> Unit,
     onAllowUsageAccess: () -> Unit,
@@ -117,7 +118,7 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { Header(onOpenSettings = onOpenSettings) }
+            item { Header(onOpenStats = onOpenStats, onOpenSettings = onOpenSettings) }
             item { ProtectionCard(on = protectionOn, locked = protectionLocked, onTurnOn = onTurnOnProtection) }
             if (shortcutAssigned == true) {
                 item { ShortcutWarningCard(canRemoveDirectly = oneTapMode, onRemove = onRemoveShortcut) }
@@ -188,7 +189,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun Header(onOpenSettings: () -> Unit) {
+private fun Header(onOpenStats: () -> Unit, onOpenSettings: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -214,6 +215,13 @@ private fun Header(onOpenSettings: () -> Unit) {
                 "Calm mornings, quiet nights",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onOpenStats) {
+            Icon(
+                painter = painterResource(R.drawable.ic_stats),
+                contentDescription = "Stats",
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
         IconButton(onClick = onOpenSettings) {
@@ -722,6 +730,7 @@ private fun HomeScreenPreview() {
             onOpenDefaultApps = {},
             onRemoveShortcut = {},
             onOpenSettings = {},
+            onOpenStats = {},
             onToggleLimit = {},
             onEditLimit = {},
             onAllowUsageAccess = {},

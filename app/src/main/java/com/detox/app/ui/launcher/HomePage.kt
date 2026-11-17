@@ -59,6 +59,13 @@ internal fun screenTimeText(ms: Long): String {
     }
 }
 
+/** "Last night: calm 🌙" / "Last night: 2 tries" (tries = times Detox stopped a paused app at night). */
+internal fun lastNightText(tries: Int): String = when (tries) {
+    0 -> "Last night: calm 🌙"
+    1 -> "Last night: 1 try"
+    else -> "Last night: $tries tries"
+}
+
 /**
  * Page 1: the calm front page.
  *
@@ -80,6 +87,7 @@ fun HomePage(
     now: LocalDateTime,
     status: String,
     screenTimeMs: Long?,
+    lastNightTries: Int?,               // null = no line (no night quiet time, or still loading)
     prefs: HomePrefs,
     home: List<HomeApp>?,               // null = still loading
     appPrefs: Map<String, AppPref>,
@@ -153,6 +161,15 @@ fun HomePage(
                     style = MaterialTheme.typography.bodyMedium,
                     color = look.soft,
                     modifier = Modifier.clickable(onClick = actions.openDetox),
+                )
+            }
+            // Same switch as screen time ("numbers under the date"). Tap -> Detox's Stats screen.
+            if (prefs.screenTimeOn && lastNightTries != null) {
+                Text(
+                    lastNightText(lastNightTries),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = look.soft,
+                    modifier = Modifier.clickable(onClick = actions.openStats),
                 )
             }
             Spacer(Modifier.height(4.dp))

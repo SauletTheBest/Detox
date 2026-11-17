@@ -11,9 +11,13 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.inputmethod.InputMethodManager
 import com.detox.app.data.RulesRepository
+import com.detox.app.data.StatsRepository
 import com.detox.app.domain.Decision
 import com.detox.app.domain.Mindful
 import com.detox.app.domain.RuleEngine
+import com.detox.app.domain.TryReason
+import com.detox.app.domain.toTryReason
+import com.detox.app.domain.windowKind
 import com.detox.app.ui.block.BlockActivity
 import com.detox.app.ui.pause.PauseActivity
 import kotlinx.coroutines.CoroutineScope
@@ -141,6 +145,8 @@ class AppWatcherService : AccessibilityService() {
 
     private fun block(decision: Decision.Block) {
         Log.i(TAG, "BLOCK ${decision.app.packageName}: ${decision.reason} until ${decision.until ?: "strict mode is off"}")
+        // Stats: one row per try (a burst of blocks within 5 s counts once).
+        StatsRepository.recordTry(decision.app.packageName, decision.reason.toTryReason(), decision.reason.windowKind())
         // Forget the current app: if it pushes a second screen on top of ours a moment
         // later (splash -> main screen), that event is NOT skipped as "same app" and we
         // block again. Re-opening the block screen is cheap (singleTask reuses it).
@@ -159,6 +165,7 @@ class AppWatcherService : AccessibilityService() {
         if (!Mindful.gate.needsPause(pkg, System.currentTimeMillis())) return false   // still in the 10-min grace
 
         Log.i(TAG, "Mindful pause for $pkg")
+        StatsRepository.recordTry(pkg, TryReason.MINDFUL)
         // Same trick as block(): forget the app, so its next screen (splash -> main) is checked again.
         currentPackage = null
         startActivity(PauseActivity.pauseIntent(this, pkg, labelOf(pkg)))

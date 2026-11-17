@@ -31,6 +31,17 @@ def columns(db: sqlite3.Connection, table: str) -> dict:
     return {r[1]: (r[2].upper(), r[3], r[4], r[5]) for r in db.execute(f"PRAGMA table_info(`{table}`)")}
 
 
+def indexes(db: sqlite3.Connection, table: str) -> dict:
+    # Room checks indexes too: name -> (unique?, [columns]). Skip SQLite's own automatic ones.
+    result = {}
+    for _, name, unique, origin, _ in db.execute(f"PRAGMA index_list(`{table}`)"):
+        if origin != "c":          # "c" = made by CREATE INDEX; "pk"/"u" = automatic
+            continue
+        cols = [r[2] for r in db.execute(f"PRAGMA index_info(`{name}`)")]
+        result[name] = (unique, cols)
+    return result
+
+
 def main() -> None:
     if len(sys.argv) != 4:
         print(__doc__)
@@ -51,18 +62,25 @@ def main() -> None:
     new_tables = [e["tableName"] for e in load(new_v)["entities"]]
     for entity in load(new_v)["entities"]:
         expected.execute(entity["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
+        for index in entity.get("indices", []):
+            expected.execute(index["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
 
     ok = True
     for table in new_tables:
         got, want = columns(phone, table), columns(expected, table)
-        if got != want:
+        got_ix, want_ix = indexes(phone, table), indexes(expected, table)
+        if got != want or got_ix != want_ix:
             ok = False
             print(f"MISMATCH in {table}:")
             for name in sorted(set(got) | set(want)):
                 if got.get(name) != want.get(name):
                     print(f"  {name}: after migration={got.get(name)}  room expects={want.get(name)}")
+            for name in sorted(set(got_ix) | set(want_ix)):
+                if got_ix.get(name) != want_ix.get(name):
+                    print(f"  index {name}: after migration={got_ix.get(name)}  room expects={want_ix.get(name)}")
         else:
-            print(f"ok  {table} ({len(got)} columns)")
+            extra = f", {len(got_ix)} index" if got_ix else ""
+            print(f"ok  {table} ({len(got)} columns{extra})")
 
     print("\nMigration matches the new schema." if ok else "\nFIX the migration before installing!")
     sys.exit(0 if ok else 3)

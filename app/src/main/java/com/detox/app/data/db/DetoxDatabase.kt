@@ -17,13 +17,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *   4 - settings.protection_wanted (self-healing protection)
  *   5 - home_prefs (strict home looks) + app_pref (favorites / hidden / mindful apps)
  *   6 - settings.reels_guard_wanted (optional Reels & Shorts guard, self-healing)
+ *   7 - block_event (stats: one row per try) + settings.stats_since_ms
  */
 @Database(
     entities = [
         QuietWindowEntity::class, PausedAppEntity::class, SettingsEntity::class,
-        HomePrefsEntity::class, AppPrefEntity::class,
+        HomePrefsEntity::class, AppPrefEntity::class, BlockEventEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class DetoxDatabase : RoomDatabase() {
@@ -32,12 +33,15 @@ abstract class DetoxDatabase : RoomDatabase() {
     abstract fun settingsDao(): SettingsDao
     abstract fun homePrefsDao(): HomePrefsDao
     abstract fun appPrefDao(): AppPrefDao
+    abstract fun statsDao(): StatsDao
 
     companion object {
         fun create(context: Context): DetoxDatabase =
             Room.databaseBuilder(context, DetoxDatabase::class.java, "detox.db")
-                // Room chains them: 1 -> 2 -> ... -> 6 (a phone on v5 runs only 5_6)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                // Room chains them: 1 -> 2 -> ... -> 7 (a phone on v5 runs 5_6, then 6_7)
+                .addMigrations(
+                    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+                )
                 .addCallback(SeedDefaults)
                 .build()
     }
@@ -138,6 +142,32 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+/**
+ * v6 -> v7: stats. The first migration that also FILLS IN data, not only structure:
+ *   1) a new table + an index on the time column
+ *   2) a new settings column, then an UPDATE that writes "now" into it
+ *      ("?" + an argument = a bound parameter, like $1 in Go's database/sql: no string gluing).
+ * The CREATE lines must match BlockEventEntity exactly (Room compares tables AND indexes).
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS block_event (
+              id           INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+              at_ms        INTEGER NOT NULL,
+              package_name TEXT    NOT NULL,
+              reason       TEXT    NOT NULL,
+              window_kind  TEXT
+            )
+            """.trimIndent()
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_block_event_at_ms ON block_event (at_ms)")
+        db.execSQL("ALTER TABLE settings ADD COLUMN stats_since_ms INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("UPDATE settings SET stats_since_ms = ? WHERE id = 1", arrayOf<Any?>(System.currentTimeMillis()))
+    }
+}
+
 /** The single home_prefs row; every column not listed takes its DEFAULT (Paper, quote on ...). */
 private const val INSERT_DEFAULT_HOME_PREFS = "INSERT OR IGNORE INTO home_prefs (id) VALUES (1)"
 
@@ -170,6 +200,9 @@ private object SeedDefaults : RoomDatabase.Callback() {
             """.trimIndent()
         )
         db.execSQL(INSERT_DEFAULT_SETTINGS)
-        db.execSQL(INSERT_DEFAULT_HOME_PREFS)   // v5; app_pref starts empty
+        // v7: stats start now (a separate UPDATE, because INSERT_DEFAULT_SETTINGS is shared with
+        // MIGRATION_1_2, which runs on old databases that don't have this column yet).
+        db.execSQL("UPDATE settings SET stats_since_ms = ? WHERE id = 1", arrayOf<Any?>(now))
+        db.execSQL(INSERT_DEFAULT_HOME_PREFS)   // v5; app_pref starts empty; block_event starts empty
     }
 }

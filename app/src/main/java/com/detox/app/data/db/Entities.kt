@@ -2,6 +2,7 @@ package com.detox.app.data.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -52,6 +53,28 @@ data class SettingsEntity(
     @ColumnInfo(name = "protection_wanted", defaultValue = "1") val protectionWanted: Boolean = true,
     // v6. defaultValue = the "DEFAULT 0" in MIGRATION_5_6. 0 = the optional Reels guard is off.
     @ColumnInfo(name = "reels_guard_wanted", defaultValue = "0") val reelsGuardWanted: Boolean = false,
+    // v7. When Detox started recording stats (epoch ms). MIGRATION_6_7 fills in "now";
+    // 0 only on a brand-new row before SeedDefaults sets it. Used so streaks don't count nights before it.
+    @ColumnInfo(name = "stats_since_ms", defaultValue = "0") val statsSinceMs: Long = 0,
+)
+
+/**
+ * v7: one row per "try" (you opened something and Detox stopped / slowed you).
+ *
+ *   CREATE TABLE block_event (id INTEGER PRIMARY KEY AUTOINCREMENT, at_ms INTEGER, package_name TEXT, ...)
+ *   CREATE INDEX index_block_event_at_ms ON block_event (at_ms)
+ *
+ * Why the index? Every stats query asks "rows since X" (WHERE at_ms >= ...). Without an index
+ * SQLite reads the whole table; with it, it jumps straight to X, like the index of a book.
+ * reason = TryReason name ("QUIET", "REELS"...); window_kind = "NIGHT"/"MORNING" for quiet times, else NULL.
+ */
+@Entity(tableName = "block_event", indices = [Index(value = ["at_ms"])])
+data class BlockEventEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "at_ms") val atMs: Long,
+    @ColumnInfo(name = "package_name") val packageName: String,
+    val reason: String,
+    @ColumnInfo(name = "window_kind") val windowKind: String? = null,
 )
 
 /**

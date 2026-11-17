@@ -61,9 +61,41 @@ object UsageAccess {
         val usm = context.getSystemService(UsageStatsManager::class.java) ?: return null
         val fromMs = from.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val nowMs = System.currentTimeMillis()
+        val list = readEvents(usm, fromMs, nowMs) { it in packages }
+        return UsageCalculator.foregroundMs(list, fromMs, nowMs)
+    }
 
+    /**
+     * Stats: milliseconds in [packages] per day. Day i runs from dayStarts[i] to dayStarts[i + 1];
+     * the last day runs until now. ONE question to Android for the whole range, then the same
+     * calculator as the daily limits, once per day. null = no Usage access.
+     * (Android keeps this log for about a week or more, depending on the phone.)
+     */
+    fun usagePerDay(context: Context, dayStarts: List<LocalDateTime>, packages: Set<String>): List<Long>? {
+        if (!isGranted(context) || dayStarts.isEmpty()) return null
+        val usm = context.getSystemService(UsageStatsManager::class.java) ?: return null
+        val zone = ZoneId.systemDefault()
+        val bounds = dayStarts.map { it.atZone(zone).toInstant().toEpochMilli() } + System.currentTimeMillis()
+        val all = readEvents(usm, bounds.first(), bounds.last()) { it in packages }
+        return dayStarts.indices.map { i ->
+            val from = bounds[i]
+            val to = bounds[i + 1]
+            UsageCalculator.foregroundMs(all.filter { it.atMs in from until to }, from, to).values.sum()
+        }
+    }
+
+    /**
+     * Android's usage log between two times, turned into calculator events.
+     * [keep] decides which apps matter; "screen off / shutdown" always stays (it ends every session).
+     */
+    private fun readEvents(
+        usm: UsageStatsManager,
+        fromMs: Long,
+        toMs: Long,
+        keep: (String?) -> Boolean,
+    ): List<UsageCalculator.Event> {
         val list = mutableListOf<UsageCalculator.Event>()
-        val events = usm.queryEvents(fromMs, nowMs)
+        val events = usm.queryEvents(fromMs, toMs)
         val e = UsageEvents.Event()
         while (events.hasNextEvent()) {
             events.getNextEvent(e)
@@ -73,10 +105,10 @@ object UsageAccess {
                 SCREEN_OFF, SHUTDOWN, STARTUP -> UsageCalculator.Type.STOP_ALL
                 else -> continue
             }
-            if (type != UsageCalculator.Type.STOP_ALL && e.packageName !in packages) continue
+            if (type != UsageCalculator.Type.STOP_ALL && !keep(e.packageName)) continue
             list += UsageCalculator.Event(e.packageName ?: "", e.className ?: "", type, e.timeStamp)
         }
-        return UsageCalculator.foregroundMs(list, fromMs, nowMs)
+        return list
     }
 
     /**
@@ -121,21 +153,7 @@ object UsageAccess {
         val fromMs = from.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val nowMs = System.currentTimeMillis()
         val skip = homeScreenPackages(context) + context.packageName + "com.android.systemui"
-
-        val list = mutableListOf<UsageCalculator.Event>()
-        val events = usm.queryEvents(fromMs, nowMs)
-        val e = UsageEvents.Event()
-        while (events.hasNextEvent()) {
-            events.getNextEvent(e)
-            val type = when (e.eventType) {
-                RESUMED -> UsageCalculator.Type.RESUMED
-                PAUSED -> UsageCalculator.Type.PAUSED
-                SCREEN_OFF, SHUTDOWN, STARTUP -> UsageCalculator.Type.STOP_ALL
-                else -> continue
-            }
-            if (type != UsageCalculator.Type.STOP_ALL && e.packageName in skip) continue
-            list += UsageCalculator.Event(e.packageName ?: "", e.className ?: "", type, e.timeStamp)
-        }
+        val list = readEvents(usm, fromMs, nowMs) { it !in skip }
         // Same calculator as the daily limits; then add all apps together.
         return UsageCalculator.foregroundMs(list, fromMs, nowMs).values.sum()
     }

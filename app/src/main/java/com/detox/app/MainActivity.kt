@@ -24,9 +24,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.detox.app.data.RulesRepository
+import com.detox.app.data.StatsRepository
 import com.detox.app.data.WallpaperStore
 import com.detox.app.domain.QuietWindow
 import com.detox.app.domain.RuleEngine
+import com.detox.app.domain.StatsSnapshot
 import com.detox.app.ui.apps.AppPickerScreen
 import com.detox.app.ui.block.BlockActivity
 import com.detox.app.ui.common.CountdownDialog
@@ -37,6 +39,7 @@ import com.detox.app.ui.home.LimitEditor
 import com.detox.app.ui.home.QuietWindowEditor
 import com.detox.app.ui.launcher.LauncherActivity
 import com.detox.app.ui.settings.SettingsScreen
+import com.detox.app.ui.stats.StatsScreen
 import com.detox.app.ui.theme.DetoxTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -48,7 +51,7 @@ import java.time.LocalDateTime
 import android.graphics.Color as AndroidColor
 
 /** Which full screen is showing. Simple "navigation": just a variable. */
-private enum class Screen { HOME, APPS, SETTINGS }
+private enum class Screen { HOME, APPS, SETTINGS, STATS }
 
 /** The editor sheet is open; window = null means "new quiet time". */
 private data class EditorRequest(val window: QuietWindow?)
@@ -78,8 +81,8 @@ class MainActivity : ComponentActivity() {
     /** We just switched strict mode on and asked Android to make Detox the home app. Waiting for the answer. */
     private var strictWaitingForHome = false
 
-    /** The strict home's "Home settings" link asked us to open Settings (see [EXTRA_OPEN]). */
-    private var openSettingsRequested by mutableStateOf(false)
+    /** The strict home asked us to open a screen: "Home settings" link or "Last night" line (see [EXTRA_OPEN]). */
+    private var openRequested by mutableStateOf<Screen?>(null)
 
     // "Become the home app" system dialog; when it closes, check what the user chose.
     private val homeRoleRequest = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -125,13 +128,20 @@ class MainActivity : ComponentActivity() {
             var limitEditorOpen by remember { mutableStateOf(false) }
             var pending by remember { mutableStateOf<PendingChange?>(null) }
 
-            // Opened from the strict home's "Home settings" link -> show Settings.
-            // LaunchedEffect runs again whenever the flag changes, also for a later onNewIntent.
-            LaunchedEffect(openSettingsRequested) {
-                if (openSettingsRequested) {
-                    screen = Screen.SETTINGS
-                    openSettingsRequested = false
+            // Opened from the strict home ("Home settings" / "Last night" line) -> show that screen.
+            // LaunchedEffect runs again whenever the request changes, also for a later onNewIntent.
+            LaunchedEffect(openRequested) {
+                openRequested?.let {
+                    screen = it
+                    openRequested = null
                 }
+            }
+
+            // Stats: loaded only while the Stats screen is open. statsVersion = live row count of
+            // block_event, so a new try (e.g. the guard closing Reels) refreshes an open Stats screen.
+            val statsVersion by remember { StatsRepository.changes() }.collectAsState(initial = 0)
+            val stats by produceState<StatsSnapshot?>(null, screen, statsVersion, apps, limits.dayStart, usageAccessOn) {
+                if (screen == Screen.STATS) value = StatsRepository.load(this@MainActivity, apps, limits.dayStart)
             }
 
             // Every change that LOOSENS a rule goes through here: first the countdown, then the change.
@@ -197,6 +207,7 @@ class MainActivity : ComponentActivity() {
                         onOpenDefaultApps = { open(SystemStatus.homeSettingsIntent()) },
                         onRemoveShortcut = ::removeShortcut,
                         onOpenSettings = { screen = Screen.SETTINGS },
+                        onOpenStats = { screen = Screen.STATS },
                         onPreviewBlock = { startActivity(BlockActivity.previewIntent(this)) },
                     )
 
@@ -221,6 +232,13 @@ class MainActivity : ComponentActivity() {
                             else RulesRepository.setAppLimit(pkg, minutes)
                         },
                         onClose = { screen = Screen.HOME },
+                    )
+
+                    Screen.STATS -> StatsScreen(
+                        stats = stats,
+                        usageAccessOn = usageAccessOn,
+                        onAllowUsageAccess = ::openUsageAccessSettings,
+                        onBack = { screen = Screen.HOME },
                     )
 
                     Screen.SETTINGS -> SettingsScreen(
@@ -388,7 +406,10 @@ class MainActivity : ComponentActivity() {
 
     /** "open" = "settings" -> jump to the Settings screen (the Compose LaunchedEffect does the switch). */
     private fun handleOpenRequest(intent: Intent?) {
-        if (intent?.getStringExtra(EXTRA_OPEN) == OPEN_SETTINGS) openSettingsRequested = true
+        when (intent?.getStringExtra(EXTRA_OPEN)) {
+            OPEN_SETTINGS -> openRequested = Screen.SETTINGS
+            OPEN_STATS -> openRequested = Screen.STATS
+        }
     }
 
     private fun refreshStatus() {
@@ -541,5 +562,6 @@ class MainActivity : ComponentActivity() {
         /** Intent extra: which Detox screen to open. Used by the strict home's "Home settings" link. */
         const val EXTRA_OPEN = "open"
         const val OPEN_SETTINGS = "settings"
+        const val OPEN_STATS = "stats"
     }
 }

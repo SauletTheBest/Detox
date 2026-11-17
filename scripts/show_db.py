@@ -99,6 +99,22 @@ def main(path: str) -> None:
             fav = "-" if pos is None else str(pos)
             print(f"  {pkg:<34} favorite_pos={fav:<2} hidden={hidden} mindful={mindful}")
 
+    # ---- version 7: stats ----
+    if "block_event" in tables:
+        total = cur.execute("SELECT COUNT(*) FROM block_event").fetchone()[0]
+        print(f"\n== block_event ==   ({total} tries in total)")
+        # The same GROUP BY the Stats screen uses: one line per app and reason.
+        for pkg, reason, tries, last in cur.execute(
+            """
+            SELECT package_name, reason, COUNT(*) AS tries,
+                   datetime(MAX(at_ms) / 1000, 'unixepoch', 'localtime') AS last_try
+            FROM block_event
+            GROUP BY package_name, reason
+            ORDER BY tries DESC
+            """
+        ):
+            print(f"  {pkg:<34} {reason:<12} tries={tries:<4} last={last}")
+
     con.close()
 
 

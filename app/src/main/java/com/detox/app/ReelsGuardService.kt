@@ -8,7 +8,9 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 import com.detox.app.data.RulesRepository
+import com.detox.app.data.StatsRepository
 import com.detox.app.domain.BackCooldown
+import com.detox.app.domain.TryReason
 import com.detox.app.domain.SeenView
 import com.detox.app.domain.ShortsRules
 
@@ -49,6 +51,7 @@ class ReelsGuardService : AccessibilityService() {
             Log.i(TAG, "Short videos in $pkg: going back")
             performGlobalAction(GLOBAL_ACTION_BACK)
             Toast.makeText(this, "Reels and Shorts are paused 🍃", Toast.LENGTH_SHORT).show()
+            StatsRepository.recordTry(pkg, TryReason.REELS)
         } finally {
             recycle(root)
         }
