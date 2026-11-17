@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private var isHomeApp by mutableStateOf(false)
     private var shortcutAssigned by mutableStateOf<Boolean?>(null)
     private var oneTapMode by mutableStateOf(false)         // WRITE_SECURE_SETTINGS was granted from a PC
+    private var reelsGuardOn by mutableStateOf(false)       // the optional Reels & Shorts guard
     private var appActive by mutableStateOf(false)          // the countdown only runs while true
 
     // Help dialogs. They live here (not inside Compose) because plain functions like
@@ -225,6 +226,7 @@ class MainActivity : ComponentActivity() {
                     Screen.SETTINGS -> SettingsScreen(
                         protectionOn = protectionOn,
                         protectionLocked = protectionLocked,
+                        reelsGuardOn = reelsGuardOn,
                         usageAccessOn = usageAccessOn,
                         batteryOk = batteryOk,
                         shortcutAssigned = shortcutAssigned,
@@ -256,6 +258,10 @@ class MainActivity : ComponentActivity() {
                         onSetBattery = { on ->
                             if (on) open(SystemStatus.batteryIntent(this))
                             else guard("let the battery saver put Detox to sleep") { open(SystemStatus.batteryListIntent()) }
+                        },
+                        onSetReelsGuard = { on ->
+                            if (on) turnOnReelsGuard()
+                            else guard("switch off the Reels & Shorts guard") { turnOffReelsGuard() }
                         },
                         onSetShortcut = { wantIt ->
                             if (!wantIt) removeShortcut()
@@ -393,6 +399,7 @@ class MainActivity : ComponentActivity() {
         isHomeApp = SystemStatus.isDefaultHome(this)
         shortcutAssigned = SystemStatus.shortcutAssigned(this)
         oneTapMode = SystemStatus.canWriteSecureSettings(this)
+        reelsGuardOn = AccessibilityStatus.isReelsGuardEnabled(this)
     }
 
     // ---- Protection -------------------------------------------------------------------
@@ -427,6 +434,28 @@ class MainActivity : ComponentActivity() {
     /** Detox's own page in Accessibility settings; some phones only open the full list. */
     private fun openProtectionPage() {
         open(SystemStatus.accessibilityDetailsIntent(this), Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    // ---- Reels & Shorts guard (optional) ------------------------------------------------
+    // Same three paths as protection: one-tap mode / Android's lock / open the right page.
+
+    private fun turnOnReelsGuard() {
+        RulesRepository.setReelsGuardWanted(true)
+        when {
+            SystemStatus.setReelsGuardEnabled(this, true) -> refreshStatus()
+            SystemStatus.isRestrictedSettingsBlocked(this) -> showRestrictedHelp = true
+            else -> openReelsGuardPage()
+        }
+    }
+
+    /** Runs AFTER the countdown (switching it off loosens your rules). */
+    private fun turnOffReelsGuard() {
+        RulesRepository.setReelsGuardWanted(false)
+        if (SystemStatus.setReelsGuardEnabled(this, false)) refreshStatus() else openReelsGuardPage()
+    }
+
+    private fun openReelsGuardPage() {
+        open(SystemStatus.reelsGuardDetailsIntent(this), Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 
     // ---- Strict mode ------------------------------------------------------------------

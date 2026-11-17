@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Config of the optional "Reels & Shorts guard" (ReelsGuardService). Compare with
+  accessibility_service_config.xml (the main bouncer, which stays blind):
+
+  packageNames              -> Android sends this service events ONLY from these two apps.
+                               Keep in sync with ShortsRules.markers.
+  typeWindowContentChanged  -> also hear "something changed inside the screen" (you tapped the
+                               Reels tab), not only "a new window opened".
+  canRetrieveWindowContent  -> the price: the service may look at screen parts. Our code only
+                               asks for ID names + "selected" (see ShortsRules), never texts.
+  flagReportViewIds         -> Android includes the ID names (e.g. ...:id/clips_tab) in the answer.
+  notificationTimeout=500   -> at most one event per half second: saves battery while a video plays.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds"
+    android:canRetrieveWindowContent="true"
+    android:notificationTimeout="500"
+    android:packageNames="com.google.android.youtube,com.instagram.android"
+    android:description="@string/reels_guard_description"
+    android:summary="@string/reels_guard_summary"
+    android:intro="@string/reels_guard_intro"
+    tools:targetApi="33" />

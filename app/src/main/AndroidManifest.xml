@@ -115,6 +115,22 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <!-- Optional "Reels & Shorts guard": a separate service with its own switch in Android,
+             so the bouncer above can stay blind. Watches only Instagram + YouTube
+             (see res/xml/reels_guard_config.xml). -->
+        <service
+            android:name=".ReelsGuardService"
+            android:exported="true"
+            android:label="@string/reels_guard_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/reels_guard_config" />
+        </service>
     </application>
 
 </manifest>

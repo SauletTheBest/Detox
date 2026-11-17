@@ -77,6 +77,10 @@ interface SettingsDao {
 
     @Query("UPDATE settings SET protection_wanted = :wanted WHERE id = 1")
     suspend fun setProtectionWanted(wanted: Boolean)
+
+    // v6: Room turns Boolean into 0/1 for SQLite automatically.
+    @Query("UPDATE settings SET reels_guard_wanted = :wanted WHERE id = 1")
+    suspend fun setReelsGuardWanted(wanted: Boolean)
 }
 
 /** v5: the strict home screen's looks (single row, id = 1). */
@@ -173,3 +177,4 @@ abstract class AppPrefDao {
         Favorites.renumber(favoritesInOrder()).forEach { (pkg, position) -> setFavoritePos(pkg, position) }
     }
 }
+

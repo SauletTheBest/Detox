@@ -60,6 +60,7 @@ private const val GRANT_COMMAND = "adb shell pm grant com.detox.app android.perm
 fun SettingsScreen(
     protectionOn: Boolean,
     protectionLocked: Boolean,      // Android's "Restricted setting" lock is on
+    reelsGuardOn: Boolean,          // the optional Reels & Shorts guard (second Accessibility service)
     usageAccessOn: Boolean,
     batteryOk: Boolean,
     shortcutAssigned: Boolean?,     // null = Android didn't let us check
@@ -74,6 +75,7 @@ fun SettingsScreen(
     onChooseWallpaper: () -> Unit,
     onRemoveWallpaper: () -> Unit,
     onSetProtection: (Boolean) -> Unit,
+    onSetReelsGuard: (Boolean) -> Unit,
     onSetUsageAccess: (Boolean) -> Unit,
     onSetBattery: (Boolean) -> Unit,
     onSetShortcut: (Boolean) -> Unit,   // true = bring the floating button back, false = remove it
@@ -186,6 +188,30 @@ fun SettingsScreen(
                         onCheckedChange = onSetShortcut,
                     )
                 }
+            }
+
+            // ---- Reels & Shorts guard (optional) ---------------------------------------
+            item {
+                Section(
+                    "Reels & Shorts guard",
+                    "Optional. Keep Instagram and YouTube, skip the endless short videos.",
+                )
+            }
+            item {
+                SwitchRow(
+                    title = "Close Reels and Shorts",
+                    why = "Messages, stories and normal videos keep working; the Reels tab and Shorts close right " +
+                        "away. To spot them, Detox checks the names of screen parts inside Instagram and YouTube " +
+                        "only, never texts or messages. Android will warn about \"full control\": this is why.",
+                    checked = reelsGuardOn,
+                    good = if (reelsGuardOn) true else null,   // optional: grey when off, never red
+                    hint = when {
+                        reelsGuardOn || oneTapMode -> null
+                        protectionLocked -> "Android has locked this switch. Tap it to see how to unlock it."
+                        else -> "Opens Android's Accessibility page: tap \"Detox Reels guard\" and switch it on."
+                    },
+                    onCheckedChange = onSetReelsGuard,
+                )
             }
 
             // ---- Home screen (strict mode) ---------------------------------------------
@@ -334,7 +360,9 @@ fun SettingsScreen(
             item {
                 Text(
                     "Detox has no internet permission, so nothing can leave your phone. It only notices which " +
-                        "app is open and for how long, never what's on the screen. Your rules live in a small " +
+                        "app is open and for how long, never what's on the screen. The one exception is the " +
+                        "optional Reels & Shorts guard: inside Instagram and YouTube it checks names of screen " +
+                        "parts (like \"Reels tab selected\"), still no texts. Your rules live in a small " +
                         "database on this phone.",
                     style = type.bodyMedium,
                     color = colors.onSurfaceVariant,

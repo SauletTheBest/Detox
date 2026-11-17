@@ -22,9 +22,10 @@ android {
         minSdk = 26
         targetSdk = 37
         // versionCode: the number Android compares for updates (must only go up).
-        // versionName: what people see. 0.8.0 = "Detox Home" (two-page strict launcher).
-        versionCode = 8
-        versionName = "0.8.0"
+        // versionName: what people see. 0.8.0 = "Detox Home" (two-page strict launcher),
+        // 0.9.0 = optional Reels & Shorts guard (DB v6).
+        versionCode = 9
+        versionName = "0.9.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

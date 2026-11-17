@@ -10,4 +10,16 @@
 
     <!-- Short intro at the top of Detox's Accessibility page (Android 13+). -->
     <string name="accessibility_intro">Detox is a calm bouncer for your phone. It only notices which app opens, so it can close social media during your quiet times.</string>
+
+    <!-- The optional second service (ReelsGuardService). Its name in Android's Accessibility list. -->
+    <string name="reels_guard_label">Detox Reels guard</string>
+
+    <!-- Shown in the "Allow full control?" dialog. Honest about the extra access, and its limits. -->
+    <string name="reels_guard_description">Optional. Closes Instagram Reels and YouTube Shorts, and keeps the rest of both apps (messages, stories, normal videos). To spot them, the guard checks the names of screen parts, like \"the Reels tab is selected\", inside Instagram and YouTube only. It does not read texts, messages or passwords, and Android gives it no events from other apps. Detox has no internet access, so nothing ever leaves your phone.</string>
+
+    <!-- One line under "Detox Reels guard" in Android's Accessibility list (Android 12+). -->
+    <string name="reels_guard_summary">Closes Reels and Shorts, keeps the rest</string>
+
+    <!-- Short intro at the top of the guard's Accessibility page (Android 13+). -->
+    <string name="reels_guard_intro">Keep Instagram and YouTube for messages and normal videos, but skip the endless short videos.</string>
 </resources>

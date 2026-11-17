@@ -59,6 +59,7 @@ fun SettingsEntity.toStrict() = StrictSettings(
     strictModeOn = strictModeOn,
     countdownSec = countdownSec,
     protectionWanted = protectionWanted,
+    reelsGuardWanted = reelsGuardWanted,
 )
 
 // ---- v5: strict home --------------------------------------------------------------

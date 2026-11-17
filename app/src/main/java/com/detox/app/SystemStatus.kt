@@ -28,6 +28,10 @@ object SystemStatus {
     private fun myService(context: Context): String =
         ComponentName(context, AppWatcherService::class.java).flattenToString()
 
+    /** The optional Reels & Shorts guard, written the same way. */
+    private fun reelsGuardService(context: Context): String =
+        ComponentName(context, ReelsGuardService::class.java).flattenToString()
+
     /** Is Detox the phone's default home screen (needed for strict mode)? */
     fun isDefaultHome(context: Context): Boolean {
         val resolved = context.packageManager.resolveActivity(homeIntent(), PackageManager.MATCH_DEFAULT_ONLY)
@@ -81,21 +85,28 @@ object SystemStatus {
      *
      * @return true = done by Detox; false = not allowed (no grant), so the caller opens Settings.
      */
-    fun setProtectionEnabled(context: Context, on: Boolean): Boolean {
+    fun setProtectionEnabled(context: Context, on: Boolean): Boolean =
+        setServiceEnabled(context, myService(context), on, "Protection")
+
+    /** Same switch for the optional Reels & Shorts guard (its own entry in the same list). */
+    fun setReelsGuardEnabled(context: Context, on: Boolean): Boolean =
+        setServiceEnabled(context, reelsGuardService(context), on, "Reels guard")
+
+    /** Shared by both: add or remove ONE service in Android's list, keep every other entry. */
+    private fun setServiceEnabled(context: Context, service: String, on: Boolean, name: String): Boolean {
         if (!canWriteSecureSettings(context)) return false
         return try {
             val resolver = context.contentResolver
             val key = Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             val current = Settings.Secure.getString(resolver, key)
-            val updated = if (on) ComponentList.with(current, myService(context))
-            else ComponentList.without(current, myService(context))
+            val updated = if (on) ComponentList.with(current, service) else ComponentList.without(current, service)
             Settings.Secure.putString(resolver, key, updated)
             // The master switch for "accessibility is in use"; without it the list is ignored.
             if (on) Settings.Secure.putInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
-            Log.i(TAG, "Protection set to $on by Detox itself")
+            Log.i(TAG, "$name set to $on by Detox itself")
             true
         } catch (e: SecurityException) {
-            Log.i(TAG, "Could not change protection: $e")
+            Log.i(TAG, "Could not change $name: $e")
             false
         }
     }
@@ -150,10 +161,15 @@ object SystemStatus {
      * This action isn't in the public SDK, so we use its name as text. Some phones may refuse it;
      * MainActivity then falls back to the normal Accessibility list.
      */
-    fun accessibilityDetailsIntent(context: Context): Intent =
+    fun accessibilityDetailsIntent(context: Context): Intent = detailsIntent(myService(context))
+
+    /** The Reels guard's own Accessibility page ("Detox Reels guard"). */
+    fun reelsGuardDetailsIntent(context: Context): Intent = detailsIntent(reelsGuardService(context))
+
+    private fun detailsIntent(service: String): Intent =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
-                .putExtra(Intent.EXTRA_COMPONENT_NAME, myService(context))
+                .putExtra(Intent.EXTRA_COMPONENT_NAME, service)
         } else {
             Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         }

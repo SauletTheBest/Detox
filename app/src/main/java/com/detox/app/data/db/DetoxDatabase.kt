@@ -16,13 +16,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *   3 - settings.strict_mode_on + settings.countdown_sec (strict mode, countdown)
  *   4 - settings.protection_wanted (self-healing protection)
  *   5 - home_prefs (strict home looks) + app_pref (favorites / hidden / mindful apps)
+ *   6 - settings.reels_guard_wanted (optional Reels & Shorts guard, self-healing)
  */
 @Database(
     entities = [
         QuietWindowEntity::class, PausedAppEntity::class, SettingsEntity::class,
         HomePrefsEntity::class, AppPrefEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class DetoxDatabase : RoomDatabase() {
@@ -35,8 +36,8 @@ abstract class DetoxDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): DetoxDatabase =
             Room.databaseBuilder(context, DetoxDatabase::class.java, "detox.db")
-                // Room chains them: 1 -> 2 -> 3 -> 4 -> 5 (a phone on v3 runs 3_4, then 4_5)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                // Room chains them: 1 -> 2 -> ... -> 6 (a phone on v5 runs only 5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .addCallback(SeedDefaults)
                 .build()
     }
@@ -127,12 +128,23 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+/**
+ * v5 -> v6: one new column, same pattern as MIGRATION_3_4. The existing row gets 0 =
+ * "Reels guard not wanted": it's optional, so nobody gets it switched on by an update.
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE settings ADD COLUMN reels_guard_wanted INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 /** The single home_prefs row; every column not listed takes its DEFAULT (Paper, quote on ...). */
 private const val INSERT_DEFAULT_HOME_PREFS = "INSERT OR IGNORE INTO home_prefs (id) VALUES (1)"
 
 /**
  * Shared by the migration and fresh installs: limit off, 45 min, day starts 05:00 (300 min).
- * strict_mode_on / countdown_sec / protection_wanted are not listed -> their DEFAULT values are used.
+ * strict_mode_on / countdown_sec / protection_wanted / reels_guard_wanted are not listed
+ * -> their DEFAULT values are used.
  */
 private const val INSERT_DEFAULT_SETTINGS =
     "INSERT INTO settings (id, daily_limit_on, daily_limit_min, day_start_min) VALUES (1, 0, 45, 300)"

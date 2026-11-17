@@ -50,6 +50,8 @@ data class SettingsEntity(
     @ColumnInfo(name = "countdown_sec", defaultValue = "60") val countdownSec: Int = 60,
     // v4. Same rule: defaultValue = the "DEFAULT 1" in MIGRATION_3_4. 1 = yes, protection should be on.
     @ColumnInfo(name = "protection_wanted", defaultValue = "1") val protectionWanted: Boolean = true,
+    // v6. defaultValue = the "DEFAULT 0" in MIGRATION_5_6. 0 = the optional Reels guard is off.
+    @ColumnInfo(name = "reels_guard_wanted", defaultValue = "0") val reelsGuardWanted: Boolean = false,
 )
 
 /**

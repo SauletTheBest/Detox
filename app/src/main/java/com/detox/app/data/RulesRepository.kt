@@ -138,6 +138,11 @@ object RulesRepository {
         scope.launch { db.settingsDao().setProtectionWanted(wanted) }
     }
 
+    /** Same idea as [setProtectionWanted], for the optional Reels & Shorts guard. */
+    fun setReelsGuardWanted(wanted: Boolean) {
+        scope.launch { db.settingsDao().setReelsGuardWanted(wanted) }
+    }
+
     /**
      * Direct one-time read, for the home screen: when Home is pressed right after the phone
      * starts, the live StateFlow may not have loaded yet, so we ask the database itself.

@@ -9,11 +9,14 @@ package com.detox.app.domain
  *                    when you switch protection off inside Detox (after the countdown).
  *                    If protection is off but this is still true, someone switched it off
  *                    behind Detox's back, so Detox may switch it back on (see ProtectionGuard).
+ * reelsGuardWanted = the same idea for the optional Reels & Shorts guard (ReelsGuardService).
+ *                    Starts false: it's optional, you switch it on yourself.
  */
 data class StrictSettings(
     val strictModeOn: Boolean = false,
     val countdownSec: Int = 60,
     val protectionWanted: Boolean = true,
+    val reelsGuardWanted: Boolean = false,
 ) {
     companion object {
         /** Choices offered in Settings. No "0": a countdown always exists. */

@@ -69,6 +69,10 @@ def main(path: str) -> None:
             for row in cur.execute("SELECT protection_wanted FROM settings"):
                 # 1 = you want protection on (Detox may switch it back on); 0 = you switched it off in Detox
                 print(f"  protection_wanted={row[0]}")
+        if "reels_guard_wanted" in settings_columns:   # version 6
+            for row in cur.execute("SELECT reels_guard_wanted FROM settings"):
+                # 1 = you want the Reels & Shorts guard on; 0 = off (the default after the update)
+                print(f"  reels_guard_wanted={row[0]}")
     else:
         print("\n(no settings table yet - this is a version 1 database)")
 
