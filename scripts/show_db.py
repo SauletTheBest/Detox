@@ -115,6 +115,22 @@ def main(path: str) -> None:
         ):
             print(f"  {pkg:<34} {reason:<12} tries={tries:<4} last={last}")
 
+    # ---- version 8: quotes ----
+    if "own_quote" in tables:
+        print("
+== own_quote ==   (quotes you wrote, newest first)")
+        rows = cur.execute("SELECT id, liked, author, quote_text FROM own_quote ORDER BY id DESC").fetchall()
+        if not rows:
+            print("  (empty)")
+        for qid, liked, author, text in rows:
+            print(f"  #{qid} {'♥' if liked else ' '} {text!r}" + (f" — {author}" if author else ""))
+    if "builtin_quote_pref" in tables:
+        liked, hidden = cur.execute(
+            "SELECT COALESCE(SUM(liked), 0), COALESCE(SUM(hidden), 0) FROM builtin_quote_pref"
+        ).fetchone()
+        print(f"
+== builtin_quote_pref ==   ♥ {liked} built-in quotes, {hidden} hidden")
+
     con.close()
 
 

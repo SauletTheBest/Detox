@@ -72,6 +72,8 @@ fun SettingsScreen(
     appPrefs: List<AppPref>,        // per-app extras: home favorites, hidden, mindful pause
     maxFavorites: Int,
     onSaveHomePrefs: (HomePrefs) -> Unit,
+    quoteCounts: Triple<Int, Int, Int>,   // (liked, your own, hidden) for the "Your quotes" line
+    onOpenQuotes: () -> Unit,
     onChooseWallpaper: () -> Unit,
     onRemoveWallpaper: () -> Unit,
     onSetProtection: (Boolean) -> Unit,
@@ -239,6 +241,24 @@ fun SettingsScreen(
                         checked = homePrefs.quoteOn,
                         onCheckedChange = { onSaveHomePrefs(homePrefs.copy(quoteOn = it)) },
                     )
+                    HorizontalDivider(color = colors.outlineVariant)
+                    // A link row: opens the Quotes screen (♥ / hide / your own quotes).
+                    val (liked, own, hidden) = quoteCounts
+                    Row(
+                        Modifier.fillMaxWidth().clickable(onClick = onOpenQuotes).padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Your quotes", style = type.titleSmall, color = colors.onSurface)
+                            Text(
+                                "♥ $liked · yours $own · hidden $hidden. Add your own lines, like or hide quotes. " +
+                                    "Tip: long-press the quote on Detox Home.",
+                                style = type.bodySmall,
+                                color = colors.onSurfaceVariant,
+                            )
+                        }
+                        Text("→", style = type.titleMedium, color = colors.primary)
+                    }
                     HorizontalDivider(color = colors.outlineVariant)
                     PrefRow(
                         title = "Dark during quiet time",

@@ -52,6 +52,8 @@ def main() -> None:
     phone = sqlite3.connect(":memory:")
     for entity in load(old_v)["entities"]:
         phone.execute(entity["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
+        for index in entity.get("indices", []):    # the old version's indexes exist on the phone too
+            phone.execute(index["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
 
     # 2) the migration, statement by statement
     for statement in filter(None, (s.strip() for s in migration_sql.split(";"))):

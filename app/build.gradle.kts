@@ -23,9 +23,10 @@ android {
         targetSdk = 37
         // versionCode: the number Android compares for updates (must only go up).
         // versionName: what people see. 0.8.0 = "Detox Home" (two-page strict launcher),
-        // 0.9.0 = optional Reels & Shorts guard (DB v6), 0.10.0 = Stats (DB v7).
-        versionCode = 10
-        versionName = "0.10.0"
+        // 0.9.0 = optional Reels & Shorts guard (DB v6), 0.10.0 = Stats (DB v7),
+        // 0.11.0 = your quotes (DB v8).
+        versionCode = 11
+        versionName = "0.11.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

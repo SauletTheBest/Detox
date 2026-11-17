@@ -93,6 +93,8 @@ data class HomePrefsEntity(
     @ColumnInfo(name = "screen_time_on", defaultValue = "1") val screenTimeOn: Boolean = true,
     @ColumnInfo(name = "swipe_down_notifications", defaultValue = "1") val swipeDownNotifications: Boolean = true,
     @ColumnInfo(name = "double_tap_lock", defaultValue = "1") val doubleTapLock: Boolean = true,
+    // v8. defaultValue = the "DEFAULT 0" in MIGRATION_7_8: all quotes, not only your ♥ ones.
+    @ColumnInfo(name = "only_liked_quotes", defaultValue = "0") val onlyLikedQuotes: Boolean = false,
 )
 
 /**
@@ -106,4 +108,29 @@ data class AppPrefEntity(
     @ColumnInfo(name = "favorite_pos") val favoritePos: Int? = null,
     @ColumnInfo(name = "hidden", defaultValue = "0") val hidden: Boolean = false,
     @ColumnInfo(name = "mindful", defaultValue = "0") val mindful: Boolean = false,
+)
+
+/**
+ * v8: quotes YOU wrote. AUTOINCREMENT id = a new number for every quote, never reused,
+ * so "newest first" is simply ORDER BY id DESC.
+ */
+@Entity(tableName = "own_quote")
+data class OwnQuoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "quote_text") val quoteText: String,
+    val author: String? = null,
+    @ColumnInfo(name = "liked", defaultValue = "0") val liked: Boolean = false,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+)
+
+/**
+ * v8: your choices about BUILT-IN quotes (those live in code, Quotes.kt). Key = the quote's text,
+ * which stays the same across updates. Only quotes you touched get a row; a row that goes back to
+ * "not liked, not hidden" is deleted again, so the table stays tiny.
+ */
+@Entity(tableName = "builtin_quote_pref")
+data class BuiltinQuotePrefEntity(
+    @PrimaryKey @ColumnInfo(name = "quote_text") val quoteText: String,
+    @ColumnInfo(name = "liked", defaultValue = "0") val liked: Boolean = false,
+    @ColumnInfo(name = "hidden", defaultValue = "0") val hidden: Boolean = false,
 )

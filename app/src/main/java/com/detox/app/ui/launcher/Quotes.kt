@@ -1,12 +1,18 @@
 package com.detox.app.ui.launcher
 
-import java.time.LocalDate
-
-/** One line for the home page. author = null for Detox's own lines. */
-data class Quote(val text: String, val author: String? = null)
+import com.detox.app.domain.QuoteText
 
 /**
- * Quote of the day. Built into the app (Detox has no internet), so the list is just Kotlin.
+ * One line for the home page. author = null for Detox's own lines.
+ * typealias = a second name for the same class: the list below keeps saying Quote(...),
+ * while the rest of the app (database, QuoteBook) uses the domain name QuoteText.
+ */
+typealias Quote = QuoteText
+
+/**
+ * The BUILT-IN quotes. Built into the app (Detox has no internet), so the list is just Kotlin.
+ * Your ♥ / hidden choices and your own quotes live in the database; QuoteBook mixes them
+ * and picks the quote of the day.
  *
  * Most lines are Detox's own. The few quotes WITH an author are from public-domain books
  * (Seneca, Epictetus, Pascal, Thoreau) in old public-domain English translations. Many
@@ -103,11 +109,4 @@ object Quotes {
         Quote("Simplicity, simplicity, simplicity!", "Thoreau"),
         Quote("Time is but the stream I go a-fishing in.", "Thoreau"),
     )
-
-    /**
-     * Today's quote. Every day gets the next line: the day number (days since 1970) picks it.
-     * [offset] = how many times you tapped for "next" today.
-     */
-    fun forDay(day: LocalDate, offset: Int = 0): Quote =
-        all[Math.floorMod(day.toEpochDay() + offset, all.size.toLong()).toInt()]
 }

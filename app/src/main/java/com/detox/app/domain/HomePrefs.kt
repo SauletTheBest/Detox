@@ -26,4 +26,5 @@ data class HomePrefs(
     val screenTimeOn: Boolean = true,
     val swipeDownNotifications: Boolean = true,
     val doubleTapLock: Boolean = true,
+    val onlyLikedQuotes: Boolean = false,      // v8: quote of the day only from your ♥ and your own quotes
 )

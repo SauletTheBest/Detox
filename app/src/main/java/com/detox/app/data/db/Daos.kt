@@ -257,3 +257,59 @@ data class DayCountRow(val day: String, val tries: Int)
 
 /** One result row of a "per app" / "per reason" query. */
 data class NameCountRow(val name: String, val tries: Int)
+
+/**
+ * v8: quotes. Your own quotes (own_quote) and your ♥ / hidden choices about built-in ones
+ * (builtin_quote_pref).
+ *
+ * Why not one "UPSERT" (INSERT ... ON CONFLICT DO UPDATE)? SQLite only learned that in 3.24,
+ * and Android 8–10 phones ship an older SQLite. So: make sure the row exists, then UPDATE one
+ * column, inside @Transaction (all or nothing), the same pattern as AppPrefDao.
+ */
+@Dao
+abstract class QuotesDao {
+
+    @Query("SELECT * FROM own_quote ORDER BY id DESC")
+    abstract fun observeOwn(): Flow<List<OwnQuoteEntity>>
+
+    @Query("SELECT * FROM builtin_quote_pref")
+    abstract fun observeBuiltinPrefs(): Flow<List<BuiltinQuotePrefEntity>>
+
+    @Insert
+    abstract suspend fun insertOwn(quote: OwnQuoteEntity): Long   // returns the new id
+
+    @Query("DELETE FROM own_quote WHERE id = :id")
+    abstract suspend fun deleteOwn(id: Long)
+
+    @Query("UPDATE own_quote SET liked = :liked WHERE id = :id")
+    abstract suspend fun setOwnLiked(id: Long, liked: Boolean)
+
+    // ---- built-in choices: small building blocks + the two commands below ----
+
+    @Query("INSERT OR IGNORE INTO builtin_quote_pref (quote_text) VALUES (:text)")
+    abstract suspend fun ensureBuiltinRow(text: String)
+
+    @Query("UPDATE builtin_quote_pref SET liked = :liked WHERE quote_text = :text")
+    abstract suspend fun updateBuiltinLiked(text: String, liked: Boolean)
+
+    @Query("UPDATE builtin_quote_pref SET hidden = :hidden WHERE quote_text = :text")
+    abstract suspend fun updateBuiltinHidden(text: String, hidden: Boolean)
+
+    /** A row that says "not liked, not hidden" means nothing: delete it (the table stays tiny). */
+    @Query("DELETE FROM builtin_quote_pref WHERE quote_text = :text AND liked = 0 AND hidden = 0")
+    abstract suspend fun dropIfDefault(text: String)
+
+    @Transaction
+    open suspend fun setBuiltinLiked(text: String, liked: Boolean) {
+        ensureBuiltinRow(text)
+        updateBuiltinLiked(text, liked)
+        dropIfDefault(text)
+    }
+
+    @Transaction
+    open suspend fun setBuiltinHidden(text: String, hidden: Boolean) {
+        ensureBuiltinRow(text)
+        updateBuiltinHidden(text, hidden)
+        dropIfDefault(text)
+    }
+}

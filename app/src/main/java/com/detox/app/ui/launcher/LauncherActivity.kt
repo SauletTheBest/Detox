@@ -43,11 +43,13 @@ import com.detox.app.SystemStatus
 import com.detox.app.UsageAccess
 import com.detox.app.data.InstalledApps
 import com.detox.app.data.LauncherEntry
+import com.detox.app.data.QuotesRepository
 import com.detox.app.data.RulesRepository
 import com.detox.app.data.StatsRepository
 import com.detox.app.data.WallpaperStore
 import com.detox.app.domain.AppPref
 import com.detox.app.domain.QuietWindow
+import com.detox.app.domain.QuoteBook
 import com.detox.app.domain.RuleEngine
 import com.detox.app.ui.theme.DetoxTheme
 import kotlinx.coroutines.Dispatchers
@@ -121,6 +123,12 @@ class LauncherActivity : ComponentActivity() {
         val limits by RulesRepository.limits.collectAsState()
         val prefs by RulesRepository.homePrefs.collectAsState()
         val appPrefs by RulesRepository.appPrefs.collectAsState()
+        // v8: the quote of the day comes from YOUR pool (no hidden ones; maybe only ♥ + your own).
+        val ownQuotes by QuotesRepository.own.collectAsState()
+        val quotePrefs by QuotesRepository.builtinPrefs.collectAsState()
+        val quotePool = remember(ownQuotes, quotePrefs, prefs.onlyLikedQuotes) {
+            QuoteBook.pool(QuoteBook.merge(Quotes.all, quotePrefs, ownQuotes), prefs.onlyLikedQuotes)
+        }
 
         // Reading ~100 app names + the usage log takes a moment -> background thread.
         // produceState keeps the old values on screen while new ones load (no flicker).
@@ -193,6 +201,7 @@ class LauncherActivity : ComponentActivity() {
                 status = status,
                 screenTimeMs = loaded?.screenTimeMs,
                 lastNightTries = lastNightTries,
+                quotes = quotePool,
                 prefs = prefs,
                 lists = lists,
                 showRecents = serviceRunning,
@@ -321,6 +330,9 @@ class LauncherActivity : ComponentActivity() {
         openHomeSettings = { start(Intent(this, MainActivity::class.java).putExtra("open", "settings")) },
         openStats = {
             start(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_STATS))
+        },
+        openQuotes = {
+            start(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_QUOTES))
         },
         // These three go through our Accessibility service (Android lets it press "system buttons").
         openRecents = { AppWatcherService.openRecents() },

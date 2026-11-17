@@ -2,7 +2,9 @@ package com.detox.app.ui.launcher
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.detox.app.R
 import com.detox.app.domain.AppPref
+import com.detox.app.domain.QuoteBook
+import com.detox.app.domain.QuoteItem
 import com.detox.app.domain.HomePrefs
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -81,6 +85,7 @@ internal fun lastNightText(tries: Int): String = when (tries) {
  *
  * Gestures on empty space: swipe down = notifications, double-tap = lock the screen.
  */
+@OptIn(ExperimentalFoundationApi::class) // combinedClickable was experimental in older Compose versions
 @Composable
 fun HomePage(
     look: HomeLook,
@@ -88,6 +93,7 @@ fun HomePage(
     status: String,
     screenTimeMs: Long?,
     lastNightTries: Int?,               // null = no line (no night quiet time, or still loading)
+    quotes: List<QuoteItem>,            // the pool (hidden ones already left out, see QuoteBook.pool)
     prefs: HomePrefs,
     home: List<HomeApp>?,               // null = still loading
     appPrefs: Map<String, AppPref>,
@@ -99,7 +105,7 @@ fun HomePage(
     val timeFormat = if (DateFormat.is24HourFormat(context)) TIME_24 else TIME_12
     // Tapping the quote shows the next one. Saved, so it survives turning the phone sideways.
     var quoteOffset by rememberSaveable { mutableIntStateOf(0) }
-    val quote = Quotes.forDay(now.toLocalDate(), quoteOffset)
+    val quote = QuoteBook.forDay(quotes, now.toLocalDate(), quoteOffset)
 
     // The gesture code below is started once; always call the newest settings and actions.
     val swipeOn by rememberUpdatedState(prefs.swipeDownNotifications)
@@ -175,9 +181,10 @@ fun HomePage(
             Spacer(Modifier.height(4.dp))
             Text(status, style = MaterialTheme.typography.bodyMedium, color = look.soft)
 
-            if (prefs.quoteOn) {
+            if (prefs.quoteOn && quote != null) {
                 Spacer(Modifier.height(28.dp))
-                Column(Modifier.clickable { quoteOffset++ }) {
+                // Tap = next quote. Long-press = Detox's Quotes screen (♥ / hide / add your own).
+                Column(Modifier.combinedClickable(onClick = { quoteOffset++ }, onLongClick = actions.openQuotes)) {
                     Text(
                         "“${quote.text}”",
                         style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),

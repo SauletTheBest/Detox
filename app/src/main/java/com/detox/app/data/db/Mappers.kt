@@ -1,6 +1,8 @@
 package com.detox.app.data.db
 
 import com.detox.app.domain.AppPref
+import com.detox.app.domain.BuiltinQuotePref
+import com.detox.app.domain.OwnQuote
 import com.detox.app.domain.HomePrefs
 import com.detox.app.domain.HomeTheme
 import com.detox.app.domain.LimitSettings
@@ -73,6 +75,7 @@ fun HomePrefsEntity.toDomain() = HomePrefs(
     screenTimeOn = screenTimeOn,
     swipeDownNotifications = swipeDownNotifications,
     doubleTapLock = doubleTapLock,
+    onlyLikedQuotes = onlyLikedQuotes,
 )
 
 fun HomePrefs.toEntity() = HomePrefsEntity(
@@ -84,6 +87,7 @@ fun HomePrefs.toEntity() = HomePrefsEntity(
     screenTimeOn = screenTimeOn,
     swipeDownNotifications = swipeDownNotifications,
     doubleTapLock = doubleTapLock,
+    onlyLikedQuotes = onlyLikedQuotes,
 )
 
 fun AppPrefEntity.toDomain() = AppPref(
@@ -92,3 +96,9 @@ fun AppPrefEntity.toDomain() = AppPref(
     hidden = hidden,
     mindful = mindful,
 )
+
+// ---- v8: quotes ----------------------------------------------------------------------
+
+fun OwnQuoteEntity.toDomain() = OwnQuote(id = id, text = quoteText, author = author, liked = liked)
+
+fun BuiltinQuotePrefEntity.toDomain() = BuiltinQuotePref(liked = liked, hidden = hidden)

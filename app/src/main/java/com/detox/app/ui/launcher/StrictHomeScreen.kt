@@ -30,6 +30,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.detox.app.data.LauncherEntry
 import com.detox.app.domain.AppPref
+import com.detox.app.domain.QuoteBook
+import com.detox.app.domain.QuoteItem
 import com.detox.app.domain.HomePrefs
 import com.detox.app.domain.HomeTheme
 import com.detox.app.ui.theme.DetoxTheme
@@ -63,6 +65,7 @@ class HomeActions(
     val openDetox: () -> Unit,
     val openHomeSettings: () -> Unit,
     val openStats: () -> Unit,                     // the "Last night" line -> Detox's Stats screen
+    val openQuotes: () -> Unit,                    // long-press the quote -> Detox's Quotes screen
     val openRecents: () -> Unit,
     val openNotifications: () -> Unit,
     val lockScreen: () -> Unit,
@@ -94,6 +97,7 @@ fun StrictHomeScreen(
     status: String,
     screenTimeMs: Long?,
     lastNightTries: Int?,               // null = don't show the line (no night quiet time / still loading)
+    quotes: List<QuoteItem>,            // the pool the quote of the day comes from (QuoteBook.pool)
     prefs: HomePrefs,
     lists: HomeLists?,                  // null = still loading
     showRecents: Boolean,
@@ -122,6 +126,7 @@ fun StrictHomeScreen(
                     status = status,
                     screenTimeMs = screenTimeMs,
                     lastNightTries = lastNightTries,
+                    quotes = quotes,
                     prefs = prefs,
                     home = lists?.home,
                     appPrefs = lists?.prefs.orEmpty(),
@@ -240,7 +245,7 @@ private fun MenuItem(
 private val previewActions = HomeActions(
     openApp = {}, toggleHome = {}, toggleHidden = {}, mindfulOn = {}, appInfo = {},
     openClock = {}, openCalendar = {}, openPhone = {}, openCamera = {}, openDetox = {},
-    openHomeSettings = {}, openStats = {}, openRecents = {}, openNotifications = {}, lockScreen = {},
+    openHomeSettings = {}, openStats = {}, openQuotes = {}, openRecents = {}, openNotifications = {}, lockScreen = {},
 )
 
 private fun previewLists(): HomeLists {
@@ -280,6 +285,7 @@ private fun PreviewHome(theme: HomeTheme, page: Int) {
             status = strictStatusLine(listOf("Instagram", "YouTube", "Threads", "Pinterest")),
             screenTimeMs = 72 * 60_000L,
             lastNightTries = 0,
+            quotes = QuoteBook.pool(QuoteBook.merge(Quotes.all, emptyMap(), emptyList()), onlyLiked = false),
             prefs = prefs,
             lists = previewLists(),
             showRecents = true,

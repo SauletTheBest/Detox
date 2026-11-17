@@ -13,7 +13,7 @@ into a calm, icon-free list. There is no internet permission, so nothing ever le
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![No internet](https://img.shields.io/badge/internet%20permission-none-173A0D)
-![Tests](https://img.shields.io/badge/unit%20tests-81%20passing-6AAB2E)
+![Tests](https://img.shields.io/badge/unit%20tests-90%20passing-6AAB2E)
 ![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)
 
 <img src="docs/screenshots/11-v05-limit-card.png" width="200" alt="Home screen with quiet times and daily limit"/>&nbsp;
@@ -45,6 +45,7 @@ takes a countdown, and the phone itself gets boring.
 | 🫁 **Mindful pause** | Mark an app as "mindful" and it opens only after a 5-second breathing screen. After that you get 10 calm minutes. |
 | ⏳ **Countdown before loosening** | Turning off a quiet time, raising a limit, unpausing an app or leaving strict mode means waiting 30 s – 10 min *inside the app*. Leaving the app resets the countdown. Making rules stricter is instant. |
 | 🛡️ **Self-healing (optional)** | After a one-time USB command, Detox switches protection back on if it gets disabled behind its back. |
+| 💬 **Your quotes** | A calm quote of the day on Detox Home (80 built in). ♥ the ones you like, hide the rest, add your own lines, or show only ♥ and your own. Long-press the quote to manage them. |
 | 🎨 **Calm looks** | Paper, Sand, Mist and Night themes, your own photo as wallpaper, automatic Night during quiet time. Nunito font, no app icons on the strict home. |
 
 ## Privacy
@@ -115,11 +116,12 @@ Then on the phone:
 ```
 app/src/main/java/com/detox/app/
 ├── domain/          # pure Kotlin: QuietWindow, RuleEngine, UsageCalculator, MindfulGate…
-├── data/            # Room database (entities, DAOs, migrations), RulesRepository, StatsRepository, WallpaperStore
+├── data/            # Room database (entities, DAOs, migrations), RulesRepository, StatsRepository, QuotesRepository, WallpaperStore
 ├── ui/
 │   ├── home/        # main screen: quiet times, limits, strict mode
 │   ├── settings/    # "Keep Detox running" switches, home-screen looks
 │   ├── stats/       # Stats: big numbers, 7-day bars, top apps
+│   ├── quotes/      # your quotes: ♥, hide, add your own
 │   ├── launcher/    # Detox Home: two-page strict launcher, A–Z scroller, quotes
 │   ├── block/       # the block screen
 │   ├── pause/       # mindful pause ("take a breath")
@@ -129,18 +131,20 @@ app/src/main/java/com/detox/app/
 └── ProtectionGuard.kt     # self-healing for both services
 ```
 
-### Database (Room, schema v7)
+### Database (Room, schema v8)
 
 | Table | What it stores |
 |---|---|
 | `quiet_window` | Start/end as minutes after midnight, days as a bitmask (Mon = 1 … Sun = 64) |
 | `paused_app` | Paused apps and their optional own daily limit |
 | `settings` | One row: daily limit, day start, strict mode, countdown, protection wanted, Reels guard wanted, stats since |
-| `home_prefs` | One row: Detox Home theme, wallpaper, quote, gestures |
+| `home_prefs` | One row: Detox Home theme, wallpaper, quote, gestures, "only ♥ quotes" |
 | `app_pref` | Per app: favorite position (NULL = not on home), hidden, mindful |
 | `block_event` | One row per try: time, app, reason, quiet-time kind. Index on time; rows older than 90 days are deleted |
+| `own_quote` | Quotes you wrote (text, optional author, ♥) |
+| `builtin_quote_pref` | Your ♥ / hidden choice for a built-in quote, keyed by its text. Only quotes you touched have a row |
 
-Every schema change ships with a hand-written migration (`MIGRATION_1_2` … `MIGRATION_6_7`), so updates never lose your rules. The exported schemas are in `app/schemas/`. To look inside a debug build's database, use `scripts/show_db.py`; to check a new migration against Room's schema before it reaches a phone, use `scripts/check_migration.py`.
+Every schema change ships with a hand-written migration (`MIGRATION_1_2` … `MIGRATION_7_8`), so updates never lose your rules. The exported schemas are in `app/schemas/`. To look inside a debug build's database, use `scripts/show_db.py`; to check a new migration against Room's schema before it reaches a phone, use `scripts/check_migration.py`.
 
 Stats are plain `GROUP BY` queries. One trick: a night crosses midnight, so the query shifts every time back by 12 hours before taking the date. That way Mon 23:45 and Tue 06:30 both count as "Monday night".
 
@@ -150,7 +154,7 @@ Stats are plain `GROUP BY` queries. One trick: a night crosses midnight, so the 
 ./gradlew testDebugUnitTest
 ```
 
-There are 81 JVM unit tests: quiet windows across midnight, the rule engine (quiet time, strict mode and limits), usage counting, "is this edit at least as strict?" (checked minute by minute over a whole week), favorites ordering, the mindful gate, the Reels guard's decision and Back cooldown, stats (one try per burst, nights across midnight, calm-night streak), and editing the accessibility settings list without touching other apps.
+There are 90 JVM unit tests: quiet windows across midnight, the rule engine (quiet time, strict mode and limits), usage counting, "is this edit at least as strict?" (checked minute by minute over a whole week), favorites ordering, the mindful gate, the Reels guard's decision and Back cooldown, stats (one try per burst, nights across midnight, calm-night streak), quotes (your choices, the home-screen pool, quote of the day), and editing the accessibility settings list without touching other apps.
 
 ## Roadmap
 

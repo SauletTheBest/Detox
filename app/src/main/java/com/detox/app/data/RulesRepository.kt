@@ -66,6 +66,7 @@ object RulesRepository {
         if (::db.isInitialized) return
         db = DetoxDatabase.create(context.applicationContext)
         StatsRepository.init(db)   // v7: stats live in the same database file
+        QuotesRepository.init(db)  // v8: your quotes too
         scope.launch {
             db.quietWindowDao().observeAll().collect { rows -> _windows.value = rows.map { it.toDomain() } }
         }

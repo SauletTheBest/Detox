@@ -24,9 +24,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.detox.app.data.RulesRepository
+import com.detox.app.data.QuotesRepository
 import com.detox.app.data.StatsRepository
 import com.detox.app.data.WallpaperStore
 import com.detox.app.domain.QuietWindow
+import com.detox.app.domain.QuoteBook
 import com.detox.app.domain.RuleEngine
 import com.detox.app.domain.StatsSnapshot
 import com.detox.app.ui.apps.AppPickerScreen
@@ -38,6 +40,8 @@ import com.detox.app.ui.home.HomeScreen
 import com.detox.app.ui.home.LimitEditor
 import com.detox.app.ui.home.QuietWindowEditor
 import com.detox.app.ui.launcher.LauncherActivity
+import com.detox.app.ui.launcher.Quotes
+import com.detox.app.ui.quotes.QuotesScreen
 import com.detox.app.ui.settings.SettingsScreen
 import com.detox.app.ui.stats.StatsScreen
 import com.detox.app.ui.theme.DetoxTheme
@@ -51,7 +55,7 @@ import java.time.LocalDateTime
 import android.graphics.Color as AndroidColor
 
 /** Which full screen is showing. Simple "navigation": just a variable. */
-private enum class Screen { HOME, APPS, SETTINGS, STATS }
+private enum class Screen { HOME, APPS, SETTINGS, STATS, QUOTES }
 
 /** The editor sheet is open; window = null means "new quiet time". */
 private data class EditorRequest(val window: QuietWindow?)
@@ -123,6 +127,10 @@ class MainActivity : ComponentActivity() {
             val strict by RulesRepository.strict.collectAsState()
             val homePrefs by RulesRepository.homePrefs.collectAsState()
             val appPrefs by RulesRepository.appPrefs.collectAsState()
+            // v8: your quotes + your choices about the built-in ones, mixed into one list.
+            val ownQuotes by QuotesRepository.own.collectAsState()
+            val quotePrefs by QuotesRepository.builtinPrefs.collectAsState()
+            val quoteItems = remember(ownQuotes, quotePrefs) { QuoteBook.merge(Quotes.all, quotePrefs, ownQuotes) }
             var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
             var editor by remember { mutableStateOf<EditorRequest?>(null) }
             var limitEditorOpen by remember { mutableStateOf(false) }
@@ -241,6 +249,22 @@ class MainActivity : ComponentActivity() {
                         onBack = { screen = Screen.HOME },
                     )
 
+                    // Quotes are looks, not rules: every change is instant (no countdown).
+                    Screen.QUOTES -> QuotesScreen(
+                        items = quoteItems,
+                        onlyLiked = homePrefs.onlyLikedQuotes,
+                        onSetOnlyLiked = { RulesRepository.saveHomePrefs(homePrefs.copy(onlyLikedQuotes = it)) },
+                        onAdd = { text, author -> QuotesRepository.addOwn(text, author) },
+                        onToggleLiked = { q ->
+                            val id = q.ownId
+                            if (id != null) QuotesRepository.setOwnLiked(id, !q.liked)
+                            else QuotesRepository.setBuiltinLiked(q.text, !q.liked)
+                        },
+                        onToggleHidden = { q -> QuotesRepository.setBuiltinHidden(q.text, !q.hidden) },
+                        onDelete = { q -> q.ownId?.let(QuotesRepository::deleteOwn) },
+                        onBack = { screen = Screen.SETTINGS },
+                    )
+
                     Screen.SETTINGS -> SettingsScreen(
                         protectionOn = protectionOn,
                         protectionLocked = protectionLocked,
@@ -257,6 +281,12 @@ class MainActivity : ComponentActivity() {
                         maxFavorites = RulesRepository.MAX_FAVORITES,
                         // Home screen looks are not rules: saved right away, no countdown.
                         onSaveHomePrefs = { RulesRepository.saveHomePrefs(it) },
+                        quoteCounts = Triple(
+                            quoteItems.count { it.liked },
+                            quoteItems.count { it.isOwn },
+                            quoteItems.count { it.hidden },
+                        ),
+                        onOpenQuotes = { screen = Screen.QUOTES },
                         onChooseWallpaper = {
                             pickWallpaper.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
@@ -409,6 +439,7 @@ class MainActivity : ComponentActivity() {
         when (intent?.getStringExtra(EXTRA_OPEN)) {
             OPEN_SETTINGS -> openRequested = Screen.SETTINGS
             OPEN_STATS -> openRequested = Screen.STATS
+            OPEN_QUOTES -> openRequested = Screen.QUOTES
         }
     }
 
@@ -563,5 +594,6 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_OPEN = "open"
         const val OPEN_SETTINGS = "settings"
         const val OPEN_STATS = "stats"
+        const val OPEN_QUOTES = "quotes"
     }
 }

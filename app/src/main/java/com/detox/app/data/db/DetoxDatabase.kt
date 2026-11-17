@@ -18,13 +18,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *   5 - home_prefs (strict home looks) + app_pref (favorites / hidden / mindful apps)
  *   6 - settings.reels_guard_wanted (optional Reels & Shorts guard, self-healing)
  *   7 - block_event (stats: one row per try) + settings.stats_since_ms
+ *   8 - own_quote + builtin_quote_pref (your quotes) + home_prefs.only_liked_quotes
  */
 @Database(
     entities = [
         QuietWindowEntity::class, PausedAppEntity::class, SettingsEntity::class,
         HomePrefsEntity::class, AppPrefEntity::class, BlockEventEntity::class,
+        OwnQuoteEntity::class, BuiltinQuotePrefEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class DetoxDatabase : RoomDatabase() {
@@ -34,13 +36,15 @@ abstract class DetoxDatabase : RoomDatabase() {
     abstract fun homePrefsDao(): HomePrefsDao
     abstract fun appPrefDao(): AppPrefDao
     abstract fun statsDao(): StatsDao
+    abstract fun quotesDao(): QuotesDao
 
     companion object {
         fun create(context: Context): DetoxDatabase =
             Room.databaseBuilder(context, DetoxDatabase::class.java, "detox.db")
-                // Room chains them: 1 -> 2 -> ... -> 7 (a phone on v5 runs 5_6, then 6_7)
+                // Room chains them: 1 -> 2 -> ... -> 8 (a phone on v7 runs only 7_8)
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+                    MIGRATION_7_8,
                 )
                 .addCallback(SeedDefaults)
                 .build()
@@ -165,6 +169,37 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_block_event_at_ms ON block_event (at_ms)")
         db.execSQL("ALTER TABLE settings ADD COLUMN stats_since_ms INTEGER NOT NULL DEFAULT 0")
         db.execSQL("UPDATE settings SET stats_since_ms = ? WHERE id = 1", arrayOf<Any?>(System.currentTimeMillis()))
+    }
+}
+
+/**
+ * v7 -> v8: quotes. Two new tables (nothing to fill in: they start empty) and one new column.
+ * The CREATE lines must match OwnQuoteEntity / BuiltinQuotePrefEntity exactly.
+ */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS own_quote (
+              id         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+              quote_text TEXT    NOT NULL,
+              author     TEXT,
+              liked      INTEGER NOT NULL DEFAULT 0,
+              created_at INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS builtin_quote_pref (
+              quote_text TEXT    NOT NULL,
+              liked      INTEGER NOT NULL DEFAULT 0,
+              hidden     INTEGER NOT NULL DEFAULT 0,
+              PRIMARY KEY(quote_text)
+            )
+            """.trimIndent()
+        )
+        db.execSQL("ALTER TABLE home_prefs ADD COLUMN only_liked_quotes INTEGER NOT NULL DEFAULT 0")
     }
 }
 
