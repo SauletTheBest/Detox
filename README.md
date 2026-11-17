@@ -40,7 +40,7 @@ takes a countdown, and the phone itself gets boring.
 | 🌙 **Quiet times** | Night, morning, or your own windows (they can cross midnight). Paused apps are closed the moment they open. |
 | ⏱️ **Daily limits** | A shared budget for all paused apps (e.g. 45 min/day) plus optional per-app limits. "A new day" starts at a time you choose. |
 | 🍃 **Strict mode: Detox Home** | Detox becomes your home screen: a big clock, the date, a quote and 5 apps as plain text. Page 2 has search with an A–Z scroller. Paused apps vanish and are blocked all day. |
-| 🎬 **Reels & Shorts guard (optional)** | Keep Instagram and YouTube for messages, stories and normal videos, but the Reels tab and Shorts close right away. A separate, opt-in service that only watches those two apps. |
+| 🎬 **Reels & Shorts guard (optional)** | Keep Instagram and YouTube for messages, stories and normal videos. Open the Reels tab or a Short and Detox steps back out, then shows a calm "Reels are paused" screen: *OK* takes you back to the app, *Close* goes home. A separate, opt-in service that only watches those two apps. |
 | 📊 **Stats** | "Last night: 2 tries", calm nights in a row, a 7-day chart of tries and time in paused apps, top apps and why Detox stepped in. Detox Home shows the "last night" line under the date. Stored only on the phone, kept 90 days. |
 | 🫁 **Mindful pause** | Mark an app as "mindful" and it opens only after a 5-second breathing screen. After that you get 10 calm minutes. |
 | ⏳ **Countdown before loosening** | Turning off a quiet time, raising a limit, unpausing an app or leaving strict mode means waiting 30 s – 10 min *inside the app*. Leaving the app resets the countdown. Making rules stricter is instant. |

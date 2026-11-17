@@ -83,6 +83,16 @@
             android:taskAffinity=""
             android:theme="@style/Theme.Detox.Block" />
 
+        <!-- "Reels are paused" notice, opened by the Reels guard right after it pressed Back.
+             Same setup as the pause page: own task, hidden from recent apps. -->
+        <activity
+            android:name=".ui.reels.ReelsNoticeActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Detox.Block" />
+
         <!-- Strict mode home screen. HOME + DEFAULT = Android may use it as the home screen.
              singleTask + taskAffinity="" + stateNotNeeded: the usual setup for a launcher. -->
         <activity

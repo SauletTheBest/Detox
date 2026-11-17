@@ -1,18 +1,21 @@
 package com.detox.app
 
 import android.accessibilityservice.AccessibilityService
+import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Toast
 import com.detox.app.data.RulesRepository
 import com.detox.app.data.StatsRepository
 import com.detox.app.domain.BackCooldown
 import com.detox.app.domain.TryReason
 import com.detox.app.domain.SeenView
 import com.detox.app.domain.ShortsRules
+import com.detox.app.ui.reels.ReelsNoticeActivity
 
 /**
  * The optional "Reels & Shorts guard": a SECOND, separate accessibility service.
@@ -23,13 +26,17 @@ import com.detox.app.domain.ShortsRules
  * Android doesn't even send it events from other apps.
  *
  *   Instagram/YouTube screen changed -> ask Android for the marker IDs (ShortsRules)
- *     -> Reels tab selected / Shorts player on screen -> press Back once + a short message
+ *     -> Reels tab selected / Shorts player on screen -> press Back once
+ *     -> 0.4 s later: the "Reels are paused" notice (OK = back to the app, or close it)
  *
  * It only asks "is a view with this ID here, and is it selected?". It never reads texts.
  */
 class ReelsGuardService : AccessibilityService() {
 
     private val cooldown = BackCooldown()
+
+    // A to-do list for the main thread: "show the notice in 400 ms".
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onServiceConnected() {
         Log.i(TAG, "Reels guard connected")
@@ -49,8 +56,10 @@ class ReelsGuardService : AccessibilityService() {
             if (!cooldown.tryPress(SystemClock.elapsedRealtime())) return
 
             Log.i(TAG, "Short videos in $pkg: going back")
+            // 1) Leave Reels. 2) A moment later (Back needs time to finish), show the notice.
+            //    The other order would loop: "OK" on a notice above Reels -> Reels -> guard -> notice...
             performGlobalAction(GLOBAL_ACTION_BACK)
-            Toast.makeText(this, "Reels and Shorts are paused 🍃", Toast.LENGTH_SHORT).show()
+            handler.postDelayed({ showNotice(pkg) }, NOTICE_DELAY_MS)
             StatsRepository.recordTry(pkg, TryReason.REELS)
         } finally {
             recycle(root)
@@ -79,10 +88,27 @@ class ReelsGuardService : AccessibilityService() {
         }
     }
 
+    private fun showNotice(pkg: String) {
+        startActivity(ReelsNoticeActivity.noticeIntent(this, pkg, labelOf(pkg), ShortsRules.feedName(pkg)))
+    }
+
+    /** "Instagram" instead of "com.instagram.android". */
+    private fun labelOf(pkg: String): String = try {
+        packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
+    } catch (_: PackageManager.NameNotFoundException) {
+        "the app"
+    }
+
     // Required by Android. Nothing to stop: we only react to events.
     override fun onInterrupt() {}
 
+    override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)   // guard switched off: no notice after that
+        super.onDestroy()
+    }
+
     companion object {
         private const val TAG = "Detox" // same Logcat tag as the bouncer: filter with tag:Detox
+        private const val NOTICE_DELAY_MS = 400L
     }
 }

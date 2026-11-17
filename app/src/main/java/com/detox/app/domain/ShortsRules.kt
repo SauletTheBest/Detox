@@ -30,6 +30,9 @@ object ShortsRules {
     /** Does the guard care about this app at all? */
     fun watches(packageName: String): Boolean = packageName in markers
 
+    /** What the app calls its short-video feed, for the notice: "Shorts are paused" / "Reels are paused". */
+    fun feedName(packageName: String): String = if (packageName == YOUTUBE) "Shorts" else "Reels"
+
     /** "com.instagram.android" + clips_tab -> "com.instagram.android:id/clips_tab" (what Android expects). */
     fun fullId(packageName: String, marker: Marker): String = "$packageName:id/${marker.idName}"
 

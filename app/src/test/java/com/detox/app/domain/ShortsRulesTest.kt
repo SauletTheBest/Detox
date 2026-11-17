@@ -42,6 +42,11 @@ class ShortsRulesTest {
         assertTrue(ShortsRules.fullId(ig, Marker("clips_tab")) == "com.instagram.android:id/clips_tab")
     }
 
+    @Test fun `the notice uses each app's own word`() {
+        assertTrue(ShortsRules.feedName(yt) == "Shorts")
+        assertTrue(ShortsRules.feedName(ig) == "Reels")
+    }
+
     @Test fun `back is pressed at most once per 2 seconds`() {
         val cooldown = BackCooldown()
         assertTrue(cooldown.tryPress(10_000))
